@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState, useEffect } from "react";
+import React, { useRef, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import ParticleBackground from "./components/ParticleBackground";
@@ -34,7 +34,7 @@ function calcResult(player, panda) {
   return "lose";
 }
 
-/* Tailwind-safe panda emotion → aura badge colour mapping */
+/* Panda emotion mapping per result */
 const resultPandaEmotion = {
   win: "sad",
   lose: "happy",
@@ -84,6 +84,7 @@ export default function App() {
 
   /* ── Start a new round ── */
   const startRound = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setPhase("countdown");
     setCountdown(3);
     setResult(null);
@@ -117,7 +118,6 @@ export default function App() {
             setResult(roundResult);
             setPandaEmotion(resultPandaEmotion[roundResult]);
 
-            // Update score
             if (roundResult === "win") {
               setWins((w) => w + 1);
               sfx(playWin);
@@ -140,35 +140,6 @@ export default function App() {
     }, 1000);
   }, [sfx]);
 
-  /* ── Registration redirect ── */
-  const handleRegister = useCallback(() => {
-    // ← Replace this URL with your actual registration form
-    window.open(
-      "https://docs.google.com/forms/d/e/1FAIpQLSeIaDDnXwyk732wz-_NzP_hUEzDLv_jXrCsjE21oepJlD6X4A/viewform?usp=header",
-      "_blank",
-      "noopener",
-    );
-  }, []);
-
-  /* ── Auto-redirect 2 s after a win ── */
-  const [redirectCountdown, setRedirectCountdown] = useState(null);
-
-  useEffect(() => {
-    if (result !== "win") return;
-    setRedirectCountdown(2);
-    const interval = setInterval(() => {
-      setRedirectCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          handleRegister();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [result, handleRegister]);
-
   /* ─────────────────────────────────────────── RENDER ── */
   return (
     <div
@@ -177,6 +148,26 @@ export default function App() {
     >
       {/* ── Animated background ── */}
       <ParticleBackground />
+
+      {/* ── Floating Play Again button (fixed, always visible during result) ── */}
+      <AnimatePresence>
+        {phase === "result" && result && (
+          <motion.button
+            key="floating-play"
+            className="btn-neon-red fixed bottom-6 z-50 shadow-2xl"
+            style={{ right: "24px" }}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+            onClick={startRound}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            ↺&nbsp; Play Again
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* ── Top decorative band ── */}
       <div
@@ -205,7 +196,7 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          {/* IEEE pill */}
+          {/* Portfolio pill */}
           <div className="flex items-center justify-center gap-3 mb-3">
             <div
               className="h-px flex-1 max-w-[80px]"
@@ -218,7 +209,7 @@ export default function App() {
                              glass-card px-3 py-1"
               style={{ border: "1px solid rgba(255,26,53,0.3)" }}
             >
-              IEEE EPI SB · Event
+              Portfolio Project · AI/ML Engineer
             </span>
             <div
               className="h-px flex-1 max-w-[80px]"
@@ -237,7 +228,7 @@ export default function App() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1, duration: 0.7 }}
             >
-              Save
+              RPS
             </motion.span>
             <motion.span
               className="font-display font-black uppercase text-5xl md:text-7xl tracking-tighter
@@ -247,7 +238,7 @@ export default function App() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
             >
-              Lives
+              VS
             </motion.span>
             <motion.span
               className="font-display font-black uppercase text-5xl md:text-7xl tracking-tighter ml-3"
@@ -256,7 +247,7 @@ export default function App() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.7 }}
             >
-              AI
+              Panda
             </motion.span>
           </div>
 
@@ -267,7 +258,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.45, duration: 0.8 }}
           >
-            HACKATHON
+            AI · COMPUTER VISION
           </motion.div>
 
           <motion.p
@@ -276,7 +267,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            Beat the Panda to Register
+            Real-time gesture recognition powered by MediaPipe
           </motion.p>
         </motion.div>
       </header>
@@ -475,11 +466,11 @@ export default function App() {
                     ↺&nbsp; Play Again
                   </button>
 
-                  {/* Show auto-redirect notice on win */}
+                  {/* Congratulations card on win — no redirect */}
                   <AnimatePresence>
                     {result === "win" && (
                       <motion.div
-                        key="redirect"
+                        key="congrats"
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{
@@ -490,44 +481,41 @@ export default function App() {
                         className="flex flex-col items-center gap-2"
                       >
                         <motion.div
-                          className="glass-card px-6 py-3 flex items-center gap-3 cursor-pointer"
+                          className="glass-card px-8 py-5 flex flex-col items-center gap-3"
                           style={{
                             border: "1px solid rgba(57,255,20,0.5)",
-                            boxShadow: "0 0 24px rgba(57,255,20,0.3)",
+                            boxShadow: "0 0 32px rgba(57,255,20,0.25)",
                           }}
-                          onClick={handleRegister}
-                          whileHover={{ scale: 1.04 }}
+                          animate={{ scale: [1, 1.03, 1] }}
+                          transition={{
+                            duration: 1.8,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
                         >
                           <motion.span
-                            className="font-display text-3xl font-black"
+                            className="text-5xl"
+                            animate={{ rotate: [0, 12, -12, 0] }}
+                            transition={{ duration: 0.7, delay: 0.5 }}
+                          >
+                            🏆
+                          </motion.span>
+                          <p
+                            className="font-display text-2xl font-black uppercase tracking-widest text-center"
                             style={{
                               color: "#39ff14",
-                              textShadow: "0 0 16px rgba(57,255,20,0.8)",
+                              textShadow: "0 0 20px rgba(57,255,20,0.8)",
                             }}
-                            key={redirectCountdown}
-                            initial={{ scale: 1.6, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ duration: 0.3 }}
                           >
-                            {redirectCountdown}
-                          </motion.span>
-                          <span
-                            className="font-display text-sm uppercase tracking-widest"
-                            style={{ color: "#39ff14" }}
-                          >
-                            🎉 Redirecting to registration…
-                          </span>
+                            You Beat the Panda!
+                          </p>
+                          <p className="text-gray-400 text-xs tracking-widest uppercase text-center">
+                            🎉 Congratulations, Champion! 🎉
+                          </p>
+                          <p className="text-gray-600 text-[11px] tracking-wider text-center max-w-[220px]">
+                            You've proven your skills — the panda bows to you.
+                          </p>
                         </motion.div>
-                        <p className="text-gray-600 text-[11px] tracking-widest uppercase">
-                          or{" "}
-                          <button
-                            className="text-cyan-500 underline"
-                            onClick={handleRegister}
-                          >
-                            click here
-                          </button>{" "}
-                          now
-                        </p>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -574,9 +562,10 @@ export default function App() {
       {/* ═══════════════════════════════════════ FOOTER ═══ */}
       <footer className="relative z-10 text-center pb-8 px-4">
         <p className="text-gray-700 text-xs tracking-widest uppercase font-display">
-          IEEE EPI Student Branch &nbsp;·&nbsp; SaveLives AI Hackathon
-          &nbsp;·&nbsp;
-          <span className="text-red-900">Powered by MediaPipe + React</span>
+          Portfolio Project &nbsp;·&nbsp; AI Engineer &nbsp;·&nbsp;
+          <span className="text-red-900">
+            MediaPipe · React · TensorFlow.js
+          </span>
         </p>
       </footer>
 
